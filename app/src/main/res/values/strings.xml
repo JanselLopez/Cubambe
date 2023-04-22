@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Cubambe</string>
+    <string name="home">Home</string>
+    <string name="search">Search</string>
+    <string name="single_song">Single Song</string>
+    <string name="author">author</string>
+    <string name="year">year</string>
+    <string name="download">Download</string>
+    <string name="back">Back</string>
+    <string name="play">Play</string>
+    <string name="downloads">Downloads</string>
+    <string name="by">by</string>
+    <string name="size">Size</string>
+    <string name="loading">Loading</string>
+    <string name="check_your_connection">Check your connection</string>
+    <string name="failure_to_play_song">Failure to play song</string>
+    <string name="failed_loading_songs">Failed loading songs</string>
+    <string name="app_desc">Our goal is to provide an authentic experience of Cuban music that represents the cultural identity of Cuba. With our application, you can download and listen to your favorite classic Cuban music anytime, anywhere. Discover the beauty of Cuban music and immerse yourself in a unique and exciting musical experience.</string>
+    <string name="download_the_app_to_listen_to_the_song">Download the app to listen to the song</string>
+    <string name="share">Share</string>
+    <string name="download_some_song">Download some song</string>
+    <string name="grant_the_permissions">Grant the permissions</string>
+</resources>
