@@ -2,23 +2,22 @@ package com.jansellopez.cubambe.ui.player
 
 import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.media.MediaPlayer
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -30,56 +29,60 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jansellopez.cubambe.R
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.text.style.TextOverflow
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.jansellopez.cubambe.core.PlayerManager
-import com.valentinilk.shimmer.shimmer
+import com.jansellopez.cubambe.core.deleteSong
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalPermissionsApi::class,
+    ExperimentalFoundationApi::class
+)
 @Composable
-fun PlayerScreen(){
-    val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+fun PlayerScreen() {
     val context = LocalContext.current
-    var songs by rememberSaveable {
-        mutableStateOf(emptyList<String>())
+    val downloadsFolder =
+        context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+    var songs = remember{
+        mutableStateListOf<String>()
     }
     val scope = rememberCoroutineScope()
-    val requestPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            songs = getDownloadsSongs(context)
-        } else {
-            Toast.makeText(context, context.resources.getString(R.string.grant_the_permissions), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    if (ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        ) == PackageManager.PERMISSION_GRANTED
-    ) {
-        songs = getDownloadsSongs(context)
-    } else {
+    val permissionState =
+        rememberPermissionState(permission = Manifest.permission.READ_EXTERNAL_STORAGE)
+    if(!(permissionState.status.isGranted)){
+            Toast.makeText(
+                context,
+                context.resources.getString(R.string.grant_the_permissions),
+                Toast.LENGTH_SHORT
+            ).show()
         LaunchedEffect(Unit) {
-            requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            permissionState.launchPermissionRequest()
         }
     }
-
-
+    LaunchedEffect(Unit) {
+        if(permissionState.status.isGranted) songs.addAll(getDownloadsSongs(context))
+    }
     val mediaPlayer = PlayerManager.mediaPlayer
     var indexPlaying by remember {
         mutableStateOf(PlayerManager.indexPlaying)
     }
+    var fileNameToDelete by rememberSaveable {
+        mutableStateOf("")
+    }
+    var isShowDeleteDialog by remember {
+        mutableStateOf(false)
+    }
+    val animateAlertDialogScale by animateFloatAsState(targetValue = if(isShowDeleteDialog)1f else 0f,
+        animationSpec = if(isShowDeleteDialog)spring(dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMediumLow)else tween(durationMillis = 150, easing = FastOutLinearInEasing))
 
     var progress by rememberSaveable {
         mutableStateOf(0f)
@@ -103,17 +106,19 @@ fun PlayerScreen(){
             }while (progress!=1f && totalDuration.toFloat()!=0f)
         }
     }
+
+
     if(songs.isNotEmpty()) {
-        LazyColumn {
-            items(songs, key = { it }) {
+            LazyColumn(modifier = Modifier.animateContentSize()) {
+            items(songs, key = { it }) { fileName ->
                 SongPlayerCard(
-                    it.split("-")[0],
+                    fileName.split("-")[0],
                     {
                         try {
-                            indexPlaying = songs.indexOf(it)
+                            indexPlaying = songs.indexOf(fileName)
                             mediaPlayer.stop()
                             mediaPlayer.reset()
-                            mediaPlayer.setDataSource("$downloadsFolder/$it")
+                            mediaPlayer.setDataSource("$downloadsFolder/$fileName")
                             mediaPlayer.prepare()
                             mediaPlayer.start()
                         } catch (e: Exception) {
@@ -129,10 +134,64 @@ fun PlayerScreen(){
                         mediaPlayer.stop()
                         mediaPlayer.reset()
                     },
-                    indexPlaying == songs.indexOf(it),
-                    if (indexPlaying == songs.indexOf(it)) progress else 0f
+                    onPausePress ={
+                               if(mediaPlayer.isPlaying) {
+                                   mediaPlayer.pause()
+                               }else{
+                                   mediaPlayer.start()
+                               }
+                    },
+                    onDeletePress={
+                        isShowDeleteDialog = true
+                        fileNameToDelete =fileName
+                    },
+                    indexPlaying == songs.indexOf(fileName),
+                    if (indexPlaying == songs.indexOf(fileName)) progress else 0f,
+                    modifier = Modifier.animateItemPlacement()
                 )
             }
+        }
+
+        AnimatedVisibility(visible = isShowDeleteDialog) {
+            AlertDialog(modifier=Modifier.scale(animateAlertDialogScale),onDismissRequest = {
+                isShowDeleteDialog = false
+                fileNameToDelete =""
+            },
+                title = {
+                    Text(
+                        text = stringResource(id = R.string.warning),
+                        fontFamily = FontFamily(Font(R.font.montserrat_bold)),
+                        fontSize = 20.sp
+                    )
+                },
+                text = {
+                    Text(
+                        text = stringResource(id = R.string.are_you_sure_you_want_to_delete_this_song),
+                        fontSize = 14.sp
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            indexPlaying = -1
+                            mediaPlayer.stop()
+                            mediaPlayer.reset()
+                            deleteSong(context,fileNameToDelete)
+                            songs.remove(fileNameToDelete)
+                            isShowDeleteDialog = false
+                            fileNameToDelete =""
+                        }) {
+                        Text(text = stringResource(id = android.R.string.ok))
+                    }
+                }, dismissButton = {
+                    TextButton(
+                        onClick = {
+                            isShowDeleteDialog = false
+                            fileNameToDelete =""
+                        }) {
+                        Text(text = stringResource(id = android.R.string.cancel))
+                    }
+                })
         }
     }else{
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center){
@@ -144,7 +203,8 @@ fun PlayerScreen(){
 
 private fun getDownloadsSongs(context: Context): MutableList<String> {
     val songs = mutableListOf<String>()
-    val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    val downloadsFolder = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+
     if (downloadsFolder != null && downloadsFolder.exists() && downloadsFolder.isDirectory) {
         val files = downloadsFolder.listFiles()
 
@@ -161,49 +221,106 @@ private fun getDownloadsSongs(context: Context): MutableList<String> {
     return songs
 }
 
+@OptIn(ExperimentalMaterialApi::class, ExperimentalAnimationApi::class)
 @Composable
-fun SongPlayerCard(song:String, onPlayPress : () -> Unit, onStopPress: ()->Unit, isPlaying:Boolean, progress:Float){
+fun SongPlayerCard(
+    song: String,
+    onPlayPress: () -> Unit,
+    onStopPress: () -> Unit,
+    onPausePress: () -> Unit,
+    onDeletePress:() -> Unit,
+    isPlaying: Boolean,
+    progress: Float,
+    modifier: Modifier = Modifier
+){
     var isPlayed by rememberSaveable { mutableStateOf(isPlaying) }
     isPlayed = isPlaying
     var currentProgress by rememberSaveable { mutableStateOf(progress) }
     currentProgress = progress
+    val animatedProgress by animateFloatAsState(targetValue = currentProgress)
     val songWithoutExt = song.substringBefore(".")
     val input = songWithoutExt.split("_")
     val author = input[1]
     val title = input[2]
-    Box(modifier = Modifier
-        .fillMaxWidth()
-        ) {
+    var isPaused by rememberSaveable{ mutableStateOf(false) }
 
-        Column(modifier = Modifier.padding(10.dp)) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .align(Alignment.CenterVertically)
-                ) {
-                    Text(text = title, fontFamily = FontFamily(Font(R.font.montserrat_bold)), color = if(isPlayed) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground)
-                    Text(text = author, fontSize = 12.sp)
-                }
-                IconButton(onClick = {
-                    isPlayed = !isPlayed
-                    if(isPlayed) onPlayPress() else onStopPress()
-                }, modifier = Modifier.align(alignment = Alignment.CenterVertically)) {
-                        Icon(
-                            imageVector = if(isPlayed) Icons.Outlined.Close else Icons.Outlined.PlayArrow, contentDescription = stringResource(
-                                id = R.string.play
-                            ), tint = if(isPlayed) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
+    val animatedTintColor by animateColorAsState(targetValue = if(isPlayed) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground)
+
+    LaunchedEffect(PlayerManager.mediaPlayer.isPlaying){
+        isPaused = !(PlayerManager.mediaPlayer.isPlaying)
+    }
+
+    var isShowOptions by rememberSaveable{ mutableStateOf(false) }
+
+    Card(onClick={isShowOptions=!isShowOptions}, elevation = 0.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            ) {
+            Column(modifier = Modifier.padding(10.dp)) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(1f)
+                            .align(Alignment.CenterVertically)
+                    ) {
+                        Text(text = title, fontFamily = FontFamily(Font(R.font.montserrat_bold)), maxLines = 1, overflow = TextOverflow.Ellipsis, color = animatedTintColor)
+                        Text(text = author, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Row(modifier = Modifier.animateContentSize(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessLow
                         )
+                    )) {
+                        if(isShowOptions){
+                            IconButton(onClick = { isShowOptions=false},modifier = Modifier.align(alignment = Alignment.CenterVertically)) {
+                                Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = stringResource(
+                                    id = R.string.back
+                                ), tint = MaterialTheme.colors.onBackground)
+                            }
+                        }
+                        if(!isShowOptions){
+                            IconButton(onClick = {
+                                isPlayed = !isPlayed
+                                if(isPlayed) onPlayPress() else onStopPress()
+                            }, modifier = Modifier.align(alignment = Alignment.CenterVertically)) {
+                                Icon(
+                                    imageVector = if(isPlayed) Icons.Outlined.Close else Icons.Outlined.PlayArrow, contentDescription = stringResource(
+                                        id = R.string.play
+                                    ), tint = animatedTintColor
+                                )
+                            }
+                            if(isPlayed){
+                                IconButton(onClick = {
+                                    onPausePress()
+                                }) {
+                                    Icon(
+                                        if(isPaused) painterResource(id = R.drawable.baseline_play_arrow_24)  else painterResource(id = R.drawable.baseline_pause_24),
+                                        contentDescription = stringResource(
+                                            id =R.string.pause
+                                        ),
+                                        tint=MaterialTheme.colors.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    AnimatedVisibility(visible = isShowOptions) {
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()){
+                            TextButton(onClick = onDeletePress) {
+                                Text(text = stringResource(id = R.string.delete), color = MaterialTheme.colors.primary, fontFamily = FontFamily(Font(R.font.montserrat_bold)))
+                            }
+                        }
+                    }
                 }
-            }
-            LinearProgressIndicator(
-                progress = currentProgress.let { if(it.isNaN()) 0f else it },
-                backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+                LinearProgressIndicator(
+                    progress = animatedProgress.let { if(it.isNaN()) 0f else it },
+                    backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
+                    color = MaterialTheme.colors.primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
+            }
     }
 }

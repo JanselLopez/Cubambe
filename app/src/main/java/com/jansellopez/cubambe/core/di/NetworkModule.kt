@@ -15,7 +15,7 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideRetrofit():Retrofit = Retrofit.Builder()
-        .baseUrl("https://script.google.com/macros/s/AKfycbzl8zSgSuoiAd8Wr99QXnMMsDsO4MlgWq66sKnie7AAWrXMR8ceTa-ptm6cuGxzawNKLA/")
+        .baseUrl("https://script.google.com/macros/s/AKfycbxJpWaGdgh88QMM9zwi9pNVKs1TbRJRIx3OPAfm7PvDWJQF9x0LKjvGhtDwqtDvm7E8CQ/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 

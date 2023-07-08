@@ -3,6 +3,7 @@ package com.jansellopez.cubambe.ui.main
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,8 +42,9 @@ import kotlinx.coroutines.launch
 
 private lateinit var routes:List<Destination>
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun CubambeApp(songs:List<Song>){
+fun CubambeApp(songs: List<Song>, onRefresh: () -> Unit){
     routes = listOf(
         Destination(stringResource(id = R.string.home),Icons.Filled.Home,"home_screen"),
         Destination(stringResource(id = R.string.downloads),Icons.Filled.PlayArrow,"player_screen"),
@@ -68,7 +70,7 @@ fun CubambeApp(songs:List<Song>){
             AboutDrawer()
         }
     ) {innerPadding ->
-        CubambeHost(songs= songs,navController = navController,modifier = Modifier.padding(innerPadding))
+            CubambeHost(songs= songs,onRefresh=onRefresh,navController = navController,modifier = Modifier.padding(innerPadding))
     }
 }
 
@@ -101,25 +103,43 @@ fun AboutDrawer() {
                 }
                 Row(modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)) {
-                    Button(onClick = {
-                        val uri = Uri.parse("mailto:21jansel@gmail.com")
+                    .padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    IconButton(onClick = {
+                        val uri = Uri.parse("mailto:21jansel@gmail.com?subject=${context.resources.getString(R.string.app_name)}")
                         val i = Intent(Intent.ACTION_SENDTO,uri)
                         ContextCompat.startActivity(context, i, Bundle())
-                    }, modifier = Modifier.weight(1f)) {
-                        Icon(modifier = Modifier.padding(end = 5.dp),painter = painterResource(id = R.drawable.gmail), contentDescription = "GMAIL", tint = Color.White)
-                        Text(text = "Gmail", color =Color.White)
+                    }) {
+                        Icon(painter = painterResource(id = R.drawable.gmail), contentDescription = "GMAIL", tint = MaterialTheme.colors.primary)
                     }
-                    Spacer(modifier = Modifier.padding(horizontal = 5.dp))
-                    Button(onClick = {
+                    IconButton(onClick = {
                         val uri: Uri = Uri.parse("https://github.com/JanselLopez/Cubambe")
                         val intent = Intent(Intent.ACTION_VIEW, uri)
                         context.startActivity(intent)
-                    }, modifier = Modifier.weight(1f)) {
-                        Icon(modifier = Modifier.padding(end = 5.dp),painter = painterResource(id = R.drawable.github), contentDescription = "Github", tint = Color.White)
-                        Text(text = "Github", color =Color.White)
+                    }) {
+                        Icon(painter = painterResource(id = R.drawable.github), contentDescription = "Github", tint = MaterialTheme.colors.primary)
+                    }
+                    IconButton(onClick = {
+                        val phoneNumber = "+5356207780" // número de teléfono en formato internacional
+                        val message = "#Cubambe" // mensaje a enviar
+                        val url = "https://api.whatsapp.com/send?phone=$phoneNumber&text=${Uri.encode(message)}"
+                        val intent = Intent(Intent.ACTION_VIEW)
+                        intent.data = Uri.parse(url)
+                        context.startActivity(intent)
+                    }) {
+                        Icon(painter = painterResource(id = R.drawable.whatsapp_svgrepo_com), contentDescription = "Whatsapp", tint = MaterialTheme.colors.primary)
+                    }
+                    IconButton(onClick = {
+                        val groupId = "+wquhpV2rO3Y5MTRh" // nombre del grupo de Telegram
+                        val url = "https://t.me/$groupId" // URL del enlace a grupo de Telegram
+                        val intent = Intent(Intent.ACTION_VIEW)
+                        intent.data = Uri.parse(url)
+                        context.startActivity(intent)
+                    }) {
+                        Icon(painter = painterResource(id = R.drawable.telegram_alt_svgrepo_com), contentDescription = "Telegram", tint = MaterialTheme.colors.primary)
                     }
                 }
+                
+
 
             }
         }
@@ -130,10 +150,15 @@ fun AboutDrawer() {
 }
 
 @Composable
-fun CubambeHost(songs: List<Song>,navController: NavHostController, modifier: Modifier = Modifier){
+fun CubambeHost(
+    songs: List<Song>,
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+    onRefresh: () -> Unit
+){
     NavHost(navController = navController, startDestination = routes[0].route , modifier = modifier ){
        composable(routes[0].route){
-           HomeScreen(songs)
+           HomeScreen(songs,onRefresh=onRefresh)
        }
         composable(routes[1].route){
             PlayerScreen()
@@ -162,6 +187,7 @@ fun AppBar( onNavigationClick: ()-> Unit) {
      title = { Text(stringResource(id = R.string.app_name), fontFamily = FontFamily(listOf(Font(R.font.montserrat_variable)))) } ,
      backgroundColor = MaterialTheme.colors.background,
      actions = {
+
          IconButton(onClick = onNavigationClick) {
              Icon(Icons.Filled.Menu, contentDescription = "Drawer")
          }

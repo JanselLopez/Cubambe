@@ -1,6 +1,7 @@
 package com.jansellopez.cubambe.data.network
 
 import android.util.Log
+import com.jansellopez.cubambe.data.model.Notification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

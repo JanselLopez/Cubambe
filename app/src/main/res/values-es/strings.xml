@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cubambe</string>
+    <string name="home">Menú</string>
+    <string name="search">Buscar</string>
+    <string name="single_song">Una canción</string>
+    <string name="author">autor</string>
+    <string name="year">año</string>
+    <string name="download">Descargar</string>
+    <string name="back">Atrás</string>
+    <string name="play">Reproducir</string>
+    <string name="downloads">Descargas</string>
+    <string name="by">por</string>
+    <string name="size">tamaño</string>
+    <string name="loading">Cargando</string>
+    <string name="check_your_connection">Comprueba la conexión</string>
+    <string name="failure_to_play_song">Fallo al reproducir la canción</string>
+    <string name="failed_loading_songs">Fallo cargando las canciones</string>
+    <string name="app_desc">Nuestro objetivo es proveer una experiencia auténtica de música cubana que represente la identidad cultural de Cuba. Con nuestra aplicación usted puede descargar y escuchar su música cubana clásica favorita, en cualquier momento y lugar. Descubre la belleza de la música cubana y sumérjase en una experiencia musical emocionante y única.</string>
+    <string name="download_the_app_to_listen_to_the_song">Descarga la apk para escuchar la canción</string>
+    <string name="share">Compartir</string>
+    <string name="download_some_song">Descarga alguna canción</string>
+    <string name="grant_the_permissions">Otorga los permisos</string>
+    <string name="downloaded_song">Canción descargada</string>
+    <string name="warning">Peligro</string>
+    <string name="override_song">¿Ya tiene descargada esta canción, desea eliminarla y volverla a descargar?</string>
+    <string name="pause">Pausa</string>
+    <string name="check_your_connection_or_disable_the_firewall">Comprueba la conexión o deshabilita el cortafuegos</string>
+    <string name="delete">Eliminar</string>
+    <string name="are_you_sure_you_want_to_delete_this_song">¿Seguro que desea eliminar la canción?</string>
+    <string name="description">Descripción</string>
+</resources>

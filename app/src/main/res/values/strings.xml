@@ -20,4 +20,17 @@
     <string name="share">Share</string>
     <string name="download_some_song">Download some song</string>
     <string name="grant_the_permissions">Grant the permissions</string>
+    <string name="downloaded_song">Downloaded song</string>
+    <string name="warning">Warning</string>
+    <string name="override_song">You already have the song downloaded, do you want to delete it and download it again?</string>
+    <string name="pause">Pause</string>
+    <string name="check_your_connection_or_disable_the_firewall">Check your connection or disable the firewall</string>
+    <string name="delete">Delete</string>
+    <string name="are_you_sure_you_want_to_delete_this_song">Are you sure you want to delete this song?</string>
+    <string name="description">description</string>
+    <string name="poster_link">poster link</string>
+    <string name="song_link">song link</string>
+    <string name="continue_with_whatsapp">Continue with Whatsapp</string>
+    <string name="title">title</string>
+    <string name="continue_with_gmail">Continue with Gmail</string>
 </resources>
